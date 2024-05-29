@@ -73,14 +73,23 @@ class ApiService {
     }
   }
 
-  async getTranscriptions(): Promise<Conversation[]> {
+  async getTranscriptions(page = 1, limit = 10): Promise<{ conversations: Conversation[], meta: any }> {
     try {
+      console.log(`Fetching transcriptions for page: ${page}, limit: ${limit}`); // Debug log
       const resp = await fetch(
-        `${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""}/api/transcriptions`
+        `${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""}/api/transcriptions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ page, limit }),
+        }
       );
 
-      const { conversations } = await resp.json();
-      return conversations;
+      const data = await resp.json();
+      console.log(`Received conversations for page: ${page}`, data); // Debug log
+      return data; // Assuming data contains both conversations and meta
     } catch (error) {
       console.error("Error initializing VoiceService:", error);
       throw error;
@@ -92,8 +101,7 @@ class ApiService {
   ): Promise<TranscriptAnalysisResult> {
     try {
       const resp = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""
+        `${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""
         }/api/transcript?transcriptionSid=${transcriptionSid}`
       );
 
@@ -107,8 +115,7 @@ class ApiService {
   async getSentences(transcriptSid: string): Promise<Sentence[]> {
     try {
       const resp = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""
+        `${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""
         }/api/transcript?callSid=${transcriptSid}`
       );
 
@@ -157,8 +164,7 @@ class ApiService {
   async getAnalysisOpenAi(transcriptSid: string): Promise<AnalysisOpenAI> {
     try {
       const resp = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""
+        `${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""
         }/api/fetch-analysis-openai?transcriptionSid=${transcriptSid}`
       );
 
@@ -175,8 +181,7 @@ class ApiService {
   async getAnalysisHumeAi(transcriptSid: string): Promise<HumeAIResult> {
     try {
       const resp = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""
+        `${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""
         }/api/fetch-analysis-humeai?transcriptionSid=${transcriptSid}`
       );
 

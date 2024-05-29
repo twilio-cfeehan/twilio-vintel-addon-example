@@ -29,7 +29,8 @@ export default function Page() {
     ApiService.getViewToken(transcriptionSid)
       .then((token) => {
         console.log("Open conversation", transcriptionSid);
-        const url = `${process.env.NEXT_PUBLIC_TRANSCRIPT_VIEWER_ASSET_URL}?token=${token}`;
+        const baseUrl = process.env.NEXT_PUBLIC_TRANSCRIPT_VIEWER_ASSET_URL || "https://assets.twilio.com/public_assets/annotator/latest/index.html";
+        const url = `${baseUrl}?token=${token}`;
         // EMBEDED
         setIframeUrl(url);
       })
