@@ -19,6 +19,8 @@ type MyEvent = {
   identity: string;
   page: number;
   limit: number;
+  searchValue: string;
+  filterFrom: string;
 };
 
 export const handler: ServerlessFunctionSignature<MyContext, MyEvent> = async function (
@@ -35,31 +37,70 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> = async fu
   response.appendHeader("Access-Control-Allow-Headers", "Content-Type");
   response.appendHeader("Content-Type", "application/json");
 
-  const { page = 1, limit = 10 } = event; // Default to page 1, 10 items per page
-  console.log(`Processing request for page: ${page}, limit: ${limit}`); // Debug log
+  const { page = 1, limit = 10, searchValue, filterFrom } = event; // Default to page 1, 10 items per page
+  console.log(`Processing request for page: ${page}, limit: ${limit}, searchValue: ${searchValue}, filterFrom: ${filterFrom}`); // Debug log
+
+  const body = {
+    search_fields: [
+      { field: "account_sid", eq: context.ACCOUNT_SID },
+      { field: "service_sid", eq: context.VINTEL_SERVICE_SID },
+    ],
+    ordering: { field: "date_created", order: "desc" },
+    page,
+    limit: 1000, // Fetch a large number of records to filter locally
+  };
 
   let rsp = await fetch("https://ai.twilio.com/v1/Search", {
     headers: {
       authorization: `Basic ${btoa(
         context.ACCOUNT_SID + ":" + context.AUTH_TOKEN
-      )})`,
+      )}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify({
-      search_fields: [
-        { field: "account_sid", eq: context.ACCOUNT_SID },
-        { field: "service_sid", eq: context.VINTEL_SERVICE_SID },
-      ],
-      ordering: { field: "date_created", order: "desc" },
-      page,
-      limit,
-    }),
+    body: JSON.stringify(body),
     method: "POST",
   });
 
   let data = await rsp.json();
   console.log("Transcriptions", data);
 
-  response.setBody(data);
+  if (!data.conversations || !data.meta) {
+    response.setBody({
+      code: 400,
+      message: "Invalid response format",
+    });
+    response.setStatusCode(400);
+  } else {
+    let filteredConversations = data.conversations;
+
+    // Apply partial matching filter for `searchValue`
+    if (searchValue) {
+      filteredConversations = filteredConversations.filter((conversation: any) =>
+        conversation.sid.includes(searchValue)
+      );
+    }
+
+    // Apply partial matching filter for `filterFrom`
+    if (filterFrom) {
+      filteredConversations = filteredConversations.filter((conversation: any) =>
+        conversation.from_number.includes(filterFrom)
+      );
+    }
+
+    // Paginate results after filtering
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const paginatedConversations = filteredConversations.slice(start, end);
+
+    response.setBody({
+      conversations: paginatedConversations,
+      meta: {
+        page_count: Math.ceil(filteredConversations.length / limit),
+        page,
+        total_matched: filteredConversations.length,
+      },
+    });
+  }
+
   callback(null, response);
 };

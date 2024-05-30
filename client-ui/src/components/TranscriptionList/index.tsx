@@ -4,9 +4,9 @@ import ApiService from "@/services/ApiService";
 import { Conversation } from "@/types/Search";
 import {
   Button,
-  ButtonGroup,
   Select,
   Option,
+  Box,
   SkeletonLoader,
   Stack,
   TBody,
@@ -17,6 +17,7 @@ import {
 } from "@twilio-paste/core";
 import { FC, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { DefaultFilterGroup } from "../DefaultFilterGroup";
 
 const TranscriptionList: FC = () => {
   const router = useRouter();
@@ -26,22 +27,26 @@ const TranscriptionList: FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [page, setPage] = useState<number>(initialPage);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [searchValue, setSearchValue] = useState<string>("");
+  const [filterFrom, setFilterFrom] = useState<string>("");
 
-  const loadTranscriptions = async (page: number) => {
+  const loadTranscriptions = async (page: number, searchValue: string, filterFrom: string) => {
     setLoading(true);
     try {
-      console.log(`Loading transcriptions for page: ${page}`); // Debug log
-      const { conversations, meta } = await ApiService.getTranscriptions(page);
-      setConversations(conversations);
-      setTotalPages(meta.page_count); // Assuming the API returns this information
+      console.log(`Loading transcriptions for page: ${page} with searchValue: ${searchValue} and filterFrom: ${filterFrom}`); // Debug log
+      const { conversations, meta } = await ApiService.getTranscriptions(page, searchValue, filterFrom);
+      setConversations(conversations || []);
+      setTotalPages(meta?.page_count || 1); // Assuming the API returns this information
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadTranscriptions(page);
-  }, [page]);
+    loadTranscriptions(page, searchValue, filterFrom);
+  }, [page, searchValue, filterFrom]);
 
   const handlePageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newPage = Number(e.target.value);
@@ -65,6 +70,47 @@ const TranscriptionList: FC = () => {
     }
   };
 
+  const handleApplyFilters = (searchValue: string, filterFrom: string) => {
+    setSearchValue(searchValue);
+    setFilterFrom(filterFrom);
+    loadTranscriptions(page, searchValue, filterFrom);
+  };
+
+  const handleClearAll = () => {
+    setSearchValue("");
+    setFilterFrom("");
+    loadTranscriptions(page, "", "");
+  };
+
+  const convertToCSV = (data: any[]) => {
+    const header = ["Created", "SID", "From", "To"];
+    const rows = data.map(row => [
+      row.date_created,
+      row.sid,
+      row.from_number,
+      row.to_number
+    ].join(","));
+    return [header.join(","), ...rows].join("\n");
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const allConversations = await ApiService.getAllTranscriptions();
+      const csv = convertToCSV(allConversations);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('hidden', '');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'transcriptions.csv');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+    }
+  };
+
   if (loading)
     return (
       <Stack orientation="vertical" spacing="space80">
@@ -76,6 +122,13 @@ const TranscriptionList: FC = () => {
 
   return (
     <>
+      <DefaultFilterGroup
+        defaultFrom={filterFrom}
+        defaultSearchValue={searchValue}
+        onApplyFilters={handleApplyFilters}
+        onClearAll={handleClearAll}
+        onExportCSV={handleExportCSV}
+      />
       <Table>
         <THead>
           <Tr>

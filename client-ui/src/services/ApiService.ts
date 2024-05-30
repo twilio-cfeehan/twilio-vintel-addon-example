@@ -73,9 +73,24 @@ class ApiService {
     }
   }
 
-  async getTranscriptions(page = 1, limit = 10): Promise<{ conversations: Conversation[], meta: any }> {
+  async getAllTranscriptions(): Promise<Conversation[]> {
+    let allConversations: Conversation[] = [];
+    let page = 1;
+    let pageCount = 1;
+
+    do {
+      const { conversations, meta } = await this.getTranscriptions(page, "", "", 1000);
+      allConversations = allConversations.concat(conversations);
+      pageCount = meta.page_count;
+      page++;
+    } while (page <= pageCount);
+
+    return allConversations;
+  }
+
+  async getTranscriptions(page = 1, searchValue = "", filterFrom = "", limit = 10): Promise<{ conversations: Conversation[], meta: any }> {
     try {
-      console.log(`Fetching transcriptions for page: ${page}, limit: ${limit}`); // Debug log
+      console.log(`Fetching transcriptions for page: ${page}, searchValue: ${searchValue}, filterFrom: ${filterFrom}, limit: ${limit}`); // Debug log
       const resp = await fetch(
         `${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""}/api/transcriptions`,
         {
@@ -83,12 +98,18 @@ class ApiService {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ page, limit }),
+          body: JSON.stringify({ page, searchValue, filterFrom, limit }),
         }
       );
 
       const data = await resp.json();
       console.log(`Received conversations for page: ${page}`, data); // Debug log
+
+      // Ensure data contains conversations and meta
+      if (!data.conversations || !data.meta) {
+        throw new Error("Invalid response format");
+      }
+
       return data; // Assuming data contains both conversations and meta
     } catch (error) {
       console.error("Error initializing VoiceService:", error);
