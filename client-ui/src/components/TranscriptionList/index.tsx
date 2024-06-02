@@ -85,7 +85,7 @@ const TranscriptionList: FC = () => {
   const convertToCSV = (data: any[]) => {
     const header = ["Created", "SID", "From", "To"];
     const rows = data.map(row => [
-      row.date_created,
+      formatDate(row.date_created),
       row.sid,
       row.from_number,
       row.to_number
@@ -109,6 +109,19 @@ const TranscriptionList: FC = () => {
     } catch (error) {
       console.error('Error exporting CSV:', error);
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZoneName: 'short'
+    });
   };
 
   if (loading)
@@ -142,7 +155,7 @@ const TranscriptionList: FC = () => {
         <TBody>
           {conversations.map((c) => (
             <Tr key={c.sid}>
-              <Td>{c.date_created.toLocaleString()}</Td>
+              <Td>{formatDate(c.date_created as unknown as string)}</Td>
               <Td>{c.sid}</Td>
               <Td>{c.from_number}</Td>
               <Td>{c.to_number}</Td>
