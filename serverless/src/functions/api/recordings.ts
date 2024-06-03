@@ -6,6 +6,7 @@ import {
   ServerlessCallback,
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
+const fetch = require('node-fetch');
 
 type MyContext = {
   ACCOUNT_SID: string;

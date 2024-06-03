@@ -6,6 +6,7 @@ import {
   ServerlessCallback,
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
+const fetch = require('node-fetch');
 
 type MyContext = {
   ACCOUNT_SID: string;
@@ -48,6 +49,7 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
       const { data } = item;
       response.setBody(data);
       console.log(response);
+
     } catch (error: any) {
       console.log("Error fetching", error);
       response.setStatusCode(404);

@@ -70,37 +70,59 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> = async fu
       message: "Invalid response format",
     });
     response.setStatusCode(400);
-  } else {
-    let filteredConversations = data.conversations;
-
-    // Apply partial matching filter for `searchValue`
-    if (searchValue) {
-      filteredConversations = filteredConversations.filter((conversation: any) =>
-        conversation.sid.includes(searchValue)
-      );
-    }
-
-    // Apply partial matching filter for `filterFrom`
-    if (filterFrom) {
-      filteredConversations = filteredConversations.filter((conversation: any) =>
-        conversation.from_number.includes(filterFrom)
-      );
-    }
-
-    // Paginate results after filtering
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    const paginatedConversations = filteredConversations.slice(start, end);
-
-    response.setBody({
-      conversations: paginatedConversations,
-      meta: {
-        page_count: Math.ceil(filteredConversations.length / limit),
-        page,
-        total_matched: filteredConversations.length,
-      },
-    });
+    callback(null, response);
+    return;
   }
+
+  let filteredConversations = data.conversations;
+
+  // Apply partial matching filter for `searchValue`
+  if (searchValue) {
+    filteredConversations = filteredConversations.filter((conversation: any) =>
+      conversation.sid.includes(searchValue)
+    );
+  }
+
+  // Apply partial matching filter for `filterFrom`
+  if (filterFrom) {
+    filteredConversations = filteredConversations.filter((conversation: any) =>
+      conversation.from_number.includes(filterFrom)
+    );
+  }
+
+  // Fetch additional details for each conversation
+  const enrichedConversations = await Promise.all(
+    filteredConversations.map(async (conversation: any) => {
+      const detailsRsp = await fetch(`https://intelligence.twilio.com/v2/Transcripts/${conversation.sid}`, {
+        headers: {
+          authorization: `Basic ${btoa(
+            context.ACCOUNT_SID + ":" + context.AUTH_TOKEN
+          )}`,
+          "content-type": "application/json",
+        },
+      });
+      const detailsData = await detailsRsp.json();
+      return {
+        ...conversation,
+        status: detailsData.status,
+        recording_sid: detailsData.channel.media_properties.source_sid,
+      };
+    })
+  );
+
+  // Paginate results after filtering
+  const start = (page - 1) * limit;
+  const end = start + limit;
+  const paginatedConversations = enrichedConversations.slice(start, end);
+
+  response.setBody({
+    conversations: paginatedConversations,
+    meta: {
+      page_count: Math.ceil(enrichedConversations.length / limit),
+      page,
+      total_matched: enrichedConversations.length,
+    },
+  });
 
   callback(null, response);
 };

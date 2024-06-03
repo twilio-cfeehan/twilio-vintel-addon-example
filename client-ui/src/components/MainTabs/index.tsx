@@ -6,9 +6,8 @@ import {
   Tabs,
   useTabState,
 } from "@twilio-paste/core";
-import CallList from "../CallList";
 import TranscriptionList from "../TranscriptionList";
-
+import AggregatedView from "../AggregatedView";
 import { FC } from "react";
 
 const useMyTabState = () => {
@@ -28,14 +27,14 @@ const MainTabs: FC<MainTabsProps> = (props) => {
     <Tabs state={tabState}>
       <TabList aria-label="Call and transcription list">
         <Tab id={"tab-transcriptions"}>Transcripts</Tab>
-        <Tab id={"tab-calls"}>Call Recordings</Tab>
+        <Tab id={"tab-aggregated"}>Aggregated View</Tab>
       </TabList>
       <TabPanels>
         <TabPanel tabId={"tab-transcriptions"}>
           <TranscriptionList />
         </TabPanel>
-        <TabPanel tabId={"tab-calls"}>
-          <CallList />
+        <TabPanel tabId={"tab-aggregated"}>
+          <AggregatedView />
         </TabPanel>
       </TabPanels>
     </Tabs>

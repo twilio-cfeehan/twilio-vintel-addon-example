@@ -1,7 +1,7 @@
 "use client";
 
 import ApiService from "@/services/ApiService";
-import { Conversation } from "@/types/Search";
+import { MergedConversation } from "@/types/MergedConversation";
 import {
   Button,
   Select,
@@ -19,12 +19,14 @@ import { FC, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DefaultFilterGroup } from "../DefaultFilterGroup";
 
+const CONSOLE_RECORDINGS_ENDPOINT = "https://console.twilio.com/monitor/logs/call-recordings";
+
 const TranscriptionList: FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPage = Number(searchParams.get("page")) || 1;
   const [loading, setLoading] = useState(true);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<MergedConversation[]>([]);
   const [page, setPage] = useState<number>(initialPage);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [searchValue, setSearchValue] = useState<string>("");
@@ -33,10 +35,9 @@ const TranscriptionList: FC = () => {
   const loadTranscriptions = async (page: number, searchValue: string, filterFrom: string) => {
     setLoading(true);
     try {
-      console.log(`Loading transcriptions for page: ${page} with searchValue: ${searchValue} and filterFrom: ${filterFrom}`); // Debug log
-      const { conversations, meta } = await ApiService.getTranscriptions(page, searchValue, filterFrom);
-      setConversations(conversations || []);
-      setTotalPages(meta?.page_count || 1); // Assuming the API returns this information
+      const transcriptionData = await ApiService.getTranscriptions(page, searchValue, filterFrom);
+      setConversations(transcriptionData.conversations);
+      setTotalPages(transcriptionData.meta?.page_count || 1); // Assuming the API returns this information
     } catch (error) {
       console.error(error);
     } finally {
@@ -82,13 +83,16 @@ const TranscriptionList: FC = () => {
     loadTranscriptions(page, "", "");
   };
 
-  const convertToCSV = (data: any[]) => {
-    const header = ["Created", "SID", "From", "To"];
+  const convertToCSV = (data: MergedConversation[]) => {
+    const header = ["Created", "SID", "From", "To", "Duration", "Status", "RecordingSid"];
     const rows = data.map(row => [
-      formatDate(row.date_created),
-      row.sid,
-      row.from_number,
-      row.to_number
+      `"${formatDate(row.date_created)}"`,  // Encapsulate each field in quotes
+      `"${row.sid}"`,
+      `"${row.from_number}"`,
+      `"${row.to_number}"`,
+      `"${formatDuration(row.duration)}"`,
+      `"${row.status || ""}"`,
+      `"${row.recording_sid || ""}"`
     ].join(","));
     return [header.join(","), ...rows].join("\n");
   };
@@ -111,9 +115,9 @@ const TranscriptionList: FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString(undefined, {
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleString(undefined, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -122,6 +126,13 @@ const TranscriptionList: FC = () => {
       second: '2-digit',
       timeZoneName: 'short'
     });
+  };
+
+  const formatDuration = (duration?: number) => {
+    if (duration === undefined) return '';
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    return `${minutes}m ${seconds}s`;
   };
 
   if (loading)
@@ -149,16 +160,30 @@ const TranscriptionList: FC = () => {
             <Td>SID</Td>
             <Td>From</Td>
             <Td>To</Td>
+            <Td>Duration</Td>
+            <Td>Status</Td>
+            <Td>RecordingSid</Td>
             <Td>Actions</Td>
           </Tr>
         </THead>
         <TBody>
           {conversations.map((c) => (
             <Tr key={c.sid}>
-              <Td>{formatDate(c.date_created as unknown as string)}</Td>
+              <Td>{formatDate(c.date_created)}</Td>
               <Td>{c.sid}</Td>
               <Td>{c.from_number}</Td>
               <Td>{c.to_number}</Td>
+              <Td>{formatDuration(c.duration)}</Td>
+              <Td>{c.status}</Td>
+              <Td>
+                <a
+                  href={`${CONSOLE_RECORDINGS_ENDPOINT}?frameUrl=${encodeURIComponent(`/console/voice/recordings/recording-logs/${c.recording_sid}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {c.recording_sid}
+                </a>
+              </Td>
               <Td>
                 <Button
                   variant="link"

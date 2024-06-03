@@ -7,6 +7,7 @@ import {
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
 import { Sentence } from "../../types/Sentences";
+const fetch = require('node-fetch');
 
 const { OpenAI } = require("openai");
 

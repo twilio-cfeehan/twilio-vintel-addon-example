@@ -223,7 +223,50 @@ class ApiService {
       resolve(data as HumeAIResult);
     });
   }
+  // async getAggregatedTranscriptions(): Promise<Conversation[]> {
+  //   let allConversations: Conversation[] = [];
+  //   let page = 1;
+  //   let pageCount = 1;
+
+  //   do {
+  //     const { conversations, meta } = await this.getTranscriptions(page, "", "", 1000);
+  //     allConversations = allConversations.concat(conversations);
+  //     pageCount = meta.page_count;
+  //     page++;
+  //   } while (page <= pageCount);
+
+  //   return allConversations;
+  // }
+
+  async getAggregatedAnalysis(): Promise<any> {
+    try {
+      const resp = await fetch(
+        `${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""}/api/aggregate-analysis-openai`
+      );
+
+      if (resp.status !== 200) {
+        throw new Error("Aggregated analysis not found");
+      }
+
+      return await resp.json();
+    } catch (error) {
+      console.error("Error getting aggregated analysis:", error);
+      throw error;
+    }
+  }
+  async getIndividualAnalyses(): Promise<any[]> {
+    try {
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ""}/api/fetch-individual-analyses`);
+      return await resp.json();
+    } catch (error) {
+      console.error("Error fetching individual analyses:", error);
+      throw error;
+    }
+  }
+
 }
+
+
 
 const service = new ApiService();
 

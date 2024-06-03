@@ -83,6 +83,8 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
       // client.recordings('REXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
       // .fetch()
       // .then(recording => console.log(recording.callSid));
+      // Parse the JSON response from hume_rsp
+      const result = await hume_rsp.json();
 
       response.setBody({ status: "created", pending: result });
 
