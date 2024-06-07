@@ -5,6 +5,7 @@ import { Conversation } from "@/types/Search";
 import { Sentence } from "@/types/Sentences";
 import { Transcript } from "@/types/Transcript";
 import { TranscriptAnalysisResult } from "@/types/TranscriptAnalysis";
+import { OperatorResult } from '@/types/OperatorResult';
 import MockData from "./MockData";
 
 class ApiService {
@@ -260,6 +261,20 @@ class ApiService {
       return await resp.json();
     } catch (error) {
       console.error("Error fetching individual analyses:", error);
+      throw error;
+    }
+  }
+  async getOperatorResults(transcriptionSid: string): Promise<OperatorResult[]> {
+    try {
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_DOMAIN_OVERRIDE || ''}/api/fetch-operator-results?transcriptionSid=${transcriptionSid}`);
+      console.log(resp);
+
+      if (resp.status !== 200) {
+        throw new Error('Operator results not found');
+      }
+      return await resp.json();
+    } catch (error) {
+      console.error('Error getting operator results:', error);
       throw error;
     }
   }

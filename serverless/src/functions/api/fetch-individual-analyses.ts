@@ -63,7 +63,7 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
                         .syncMapItems("openai")
                         .fetch();
 
-                    individualData.push({ ...item.data, date_created: transcript.date_created });
+                    individualData.push({ ...item.data, date_created: transcript.date_created, transcription_sid: transcript.sid });
 
                     // Break if we have enough records
                     if (individualData.length >= 50) {
