@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { Line } from "react-chartjs-2";
+import {Bar, Chart} from "react-chartjs-2";
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -27,27 +27,37 @@ interface SentimentChartProps {
 
 const SentimentChart: FC<SentimentChartProps> = ({ individualData }) => {
     const aggregateSentimentData = (individualData: any[]) => {
-        const aggregatedData = {
-            labels: [] as string[],
-            positive: [] as number[],
-            neutral: [] as number[],
-            negative: [] as number[],
-        };
+        const sentimentCountsByDate: Record<string, { positive: number, neutral: number, negative: number }> = {};
 
         individualData.forEach(item => {
             const date = new Date(item.date_created).toLocaleDateString();
-            const index = aggregatedData.labels.indexOf(date);
 
-            if (index === -1) {
-                aggregatedData.labels.push(date);
-                aggregatedData.positive.push(item.sentiment === "positive" ? 1 : 0);
-                aggregatedData.neutral.push(item.sentiment === "neutral" ? 1 : 0);
-                aggregatedData.negative.push(item.sentiment === "negative" ? 1 : 0);
-            } else {
-                aggregatedData.positive[index] += item.sentiment === "positive" ? 1 : 0;
-                aggregatedData.neutral[index] += item.sentiment === "neutral" ? 1 : 0;
-                aggregatedData.negative[index] += item.sentiment === "negative" ? 1 : 0;
+            if (!sentimentCountsByDate[date]) {
+                sentimentCountsByDate[date] = { positive: 0, neutral: 0, negative: 0 };
             }
+
+            if (item.sentiment === "positive") sentimentCountsByDate[date].positive += 1;
+            if (item.sentiment === "neutral") sentimentCountsByDate[date].neutral += 1;
+            if (item.sentiment === "negative") sentimentCountsByDate[date].negative += 1;
+        });
+
+        const aggregatedData = {
+            labels: Object.keys(sentimentCountsByDate),
+            positive: [],
+            neutral: [],
+            negative: [],
+        };
+
+        aggregatedData.labels.forEach(date => {
+            const { positive, neutral, negative } = sentimentCountsByDate[date];
+            const total = positive + neutral + negative;
+
+            // @ts-ignore
+            aggregatedData.positive.push(positive * 100 / total);
+            // @ts-ignore
+            aggregatedData.neutral.push(neutral * 100 / total);
+            // @ts-ignore
+            aggregatedData.negative.push(negative * 100 / total * -1);
         });
 
         return aggregatedData;
@@ -59,41 +69,43 @@ const SentimentChart: FC<SentimentChartProps> = ({ individualData }) => {
         labels: sentimentData.labels,
         datasets: [
             {
-                label: "Positive Sentiment",
-                data: sentimentData.positive,
-                fill: false,
-                borderColor: "green",
-            },
-            {
-                label: "Neutral Sentiment",
+                label: "Neutral",
                 data: sentimentData.neutral,
-                fill: false,
-                borderColor: "blue",
+                backgroundColor: "rgb(159,182,178)",
             },
             {
-                label: "Negative Sentiment",
+                label: "Negative",
                 data: sentimentData.negative,
-                fill: false,
-                borderColor: "red",
+                backgroundColor: "rgb(232,21,95)",
             },
+            {
+                label: "Positive",
+                data: sentimentData.positive,
+                backgroundColor: "rgb(64,230,215)",
+            }
         ],
     };
 
     const options = {
-        responsive: true,
+        type: 'bar',
         plugins: {
-            legend: {
-                display: true,
-                position: "top" as const,
-            },
             title: {
                 display: true,
-                text: "Sentiment Trends",
+                text: 'Sentiment Trends'
             },
         },
+        responsive: true,
+        scales: {
+            x: {
+                stacked: true,
+            },
+            y: {
+                stacked: true
+            }
+        }
     };
 
-    return <Line data={chartData} options={options} />;
+    return <Chart data={chartData} options={options}  type="bar"/>;
 };
 
 export default SentimentChart;
