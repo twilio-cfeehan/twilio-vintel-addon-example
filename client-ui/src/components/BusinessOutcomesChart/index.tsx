@@ -27,7 +27,8 @@ const BusinessOutcomesChart: FC<BusinessOutcomesChartProps> = ({ individualData 
     const outcomeCounts = individualData.reduce((acc: Record<string, number>, item) => {
         const outcome = item.business_outcome;
         if (outcome) {
-            acc[outcome] = (acc[outcome] || 0) + 1;
+            const firstTwoWords = outcome.split(' ').slice(0, 2).join(' ').toLowerCase();
+            acc[firstTwoWords] = (acc[firstTwoWords] || 0) + 1;
         }
         return acc;
     }, {});

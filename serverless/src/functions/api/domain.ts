@@ -6,10 +6,6 @@ import {
   ServerlessCallback,
   ServerlessFunctionSignature,
 } from "@twilio-labs/serverless-runtime-types/types";
-import { Sentence } from "../../types/Sentences";
-const fetch = require('node-fetch');
-
-const { OpenAI } = require("openai");
 
 type MyContext = {
   ACCOUNT_SID: string;
@@ -22,7 +18,7 @@ type MyContext = {
 };
 
 type MyEvent = {
-  transcriptionSid: any;
+  request: any;
 };
 
 export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
@@ -35,5 +31,9 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
     console.log(event);
     console.log("Domain name", context.DOMAIN_NAME);
 
-    return callback(null, { domain: context.DOMAIN_NAME });
+    return callback(null, {
+      domain: context.DOMAIN_NAME,
+      override: context.DOMAIN_OVERRIDE,
+      req: event.request,
+    });
   };

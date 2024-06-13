@@ -13,6 +13,8 @@ export interface OperatorResult {
     match_probability?: number;
     predicted_probability?: number;
     utterance_results?: UtteranceResult[];
+    predicted_label: string;
+    extract_match?: boolean;
 }
 
 export interface UtteranceResult {
