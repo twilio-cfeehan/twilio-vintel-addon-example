@@ -58,7 +58,7 @@ export const handler: ServerlessFunctionSignature<MyContext, MyEvent> =
     const prompt = [
       {
         role: "system",
-        content: `Anaylse this customer service interaction, respond back with a JSON object with the keys {"sentiment","business_outcome","summary", "intervention_required","predicted_nps_score","predicted_csat_score"}`,
+        content: `Anaylse this customer service interaction. Any negative business_outcome like loss of sale, failure to place order should be classified as negative sentiment. Successful orders should be considered positive sentiment. Respond back with a JSON object with the keys {"sentiment","business_outcome","summary", "intervention_required","predicted_nps_score","predicted_csat_score"}`,
       },
     ];
 
