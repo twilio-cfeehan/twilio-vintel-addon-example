@@ -1,4 +1,4 @@
-import { FC } from "react";
+import {FC, useEffect} from "react";
 import { Doughnut } from "react-chartjs-2";
 import {
     Chart as ChartJS,
@@ -19,7 +19,7 @@ interface OperatorUsageChartProps {
 
 // @ts-ignore
 const OperatorUsageChart: FC<OperatorUsageChartProps> = ({ operatorResults }) => {
-    const operatorNames = ["Prod_CallDisposition", "Password Reset", "Call Transfer", "Unavailable-Party", "Voicemail Detector", "RecordingDisclosureOperator", "Entity Recognition", "Lead generation"];
+    const operatorNames = ["Prod_CallDisposition", "Password Reset", "Unavailable-Party", "Voicemail Detector", "Entity Recognition", "Lead generation"];
 
     return (
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around' }}>
@@ -38,6 +38,18 @@ const OperatorUsageChart: FC<OperatorUsageChartProps> = ({ operatorResults }) =>
                   }
                   return acc;
               }, {});
+
+
+              const sentimentAnalysisResults = operatorResults.filter(result => result.name === "Sentiment Analysis");
+              const sentimentMap = sentimentAnalysisResults.reduce((acc: Record<string, string[]>, result) => {
+                  if (!acc[result.predicted_label]) {
+                      acc[result.predicted_label] = [];
+                  }
+                  acc[result.predicted_label].push(result.transcript_sid);
+                  return acc;
+              }, {});
+
+              localStorage.setItem('OperatorResults#SentimentMap', JSON.stringify(sentimentMap));
 
               const sortedOperators = Object.entries(operatorCounts).sort(([, a], [, b]) => b - a);
 

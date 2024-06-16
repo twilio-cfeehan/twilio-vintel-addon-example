@@ -8,15 +8,19 @@ import {
 } from "@twilio-paste/core";
 import TranscriptionList from "../TranscriptionList";
 import AggregatedView from "../AggregatedView";
-import { FC } from "react";
+import {FC, useCallback, useState} from "react";
 
 const useMyTabState = () => {
   const tab = useTabState();
+  const switchToTab = useCallback((tabId: string) => {
+    tab.setSelectedId(tabId);
+  }, [tab]);
   return {
     ...tab,
     baseId: "layout",
   };
 };
+
 
 export type MainTabsProps = {};
 
@@ -26,11 +30,11 @@ const MainTabs: FC<MainTabsProps> = (props) => {
   return (
     <Tabs state={tabState}>
       <TabList aria-label="Call and transcription list">
-        <Tab id={"tab-transcriptions"}>Transcripts</Tab>
+        <Tab id={"tab-transcriptions"} >Transcripts</Tab>
         <Tab id={"tab-aggregated"}>Aggregated View</Tab>
       </TabList>
       <TabPanels>
-        <TabPanel tabId={"tab-transcriptions"}>
+        <TabPanel tabId={"tab-transcriptions"} >
           <TranscriptionList />
         </TabPanel>
         <TabPanel tabId={"tab-aggregated"}>
