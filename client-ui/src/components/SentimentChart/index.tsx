@@ -1,5 +1,5 @@
-import { FC } from "react";
-import {Bar, Chart} from "react-chartjs-2";
+import {FC, MouseEvent, useRef, useState} from "react";
+import {Bar, Chart, getDatasetAtEvent, getElementAtEvent} from "react-chartjs-2";
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -8,8 +8,9 @@ import {
     LineElement,
     Title,
     Tooltip,
-    Legend,
+    Legend, InteractionItem,
 } from "chart.js";
+import MainTabs from "@/components/MainTabs";
 
 ChartJS.register(
     CategoryScale,
@@ -62,7 +63,7 @@ const SentimentChart: FC<SentimentChartProps> = ({ individualData }) => {
 
         return aggregatedData;
     };
-
+    const [tab, setTab] = useState("SentimentChart");
     const sentimentData = aggregateSentimentData(individualData);
 
     const chartData = {
@@ -104,8 +105,49 @@ const SentimentChart: FC<SentimentChartProps> = ({ individualData }) => {
             }
         }
     };
+    const chartRef = useRef<ChartJS>(null);
+    const onClick = (event: MouseEvent) => {
+        const { current: chart } = chartRef;
 
-    return <Chart data={chartData} options={options}  type="bar"/>;
+        if (!chart) {
+            return;
+        }
+
+        // @ts-ignore
+        const contextDataset : number | undefined = getDataset(getDatasetAtEvent(chart, event));
+
+        const currentUrl = window.location.href;
+        const newParams = { filter: "sentiment" , contextDataset: contextDataset};
+        // @ts-ignore
+        const newUrl = setQueryParams(currentUrl, newParams);
+        window.location.href = newUrl;
+        setTab('tab-transcriptions');
+    };
+
+    const setQueryParams = (url: string, params: { contextDataset: string | undefined; contextDate: string | undefined }) => {
+        const urlObj = new URL(url);
+        const urlParams = new URLSearchParams(urlObj.search);
+
+        Object.entries(params).forEach(([key, value]) => {
+            if (!value) {
+                return;
+            }
+            urlParams.set(key, value.toString());
+        });
+
+        urlObj.search = urlParams.toString();
+
+        return urlObj.toString();
+    };
+
+    const getDataset = (dataset: InteractionItem[]) => {
+        if (!dataset.length) return;
+        const datasetIndex = dataset[0].datasetIndex;
+        return chartData.datasets[datasetIndex].label;
+    };
+
+    return <Chart ref={chartRef} data={chartData} options={options}  type="bar" onClick={onClick}/>;
 };
 
 export default SentimentChart;
+

@@ -31,11 +31,20 @@ const TranscriptionList: FC = () => {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [searchValue, setSearchValue] = useState<string>("");
   const [filterFrom, setFilterFrom] = useState<string>("");
+  const sentimentFilter = searchParams.get("contextDataset") || "";
 
   const loadTranscriptions = async (page: number, searchValue: string, filterFrom: string) => {
     setLoading(true);
     try {
       const transcriptionData = await ApiService.getTranscriptions(page, searchValue, filterFrom);
+      if (sentimentFilter && localStorage.getItem("OperatorResults#SentimentMap")) {
+        const results = JSON.parse(localStorage.getItem("OperatorResults#SentimentMap")  || "{}");
+        const transcripts = results[sentimentFilter.toLowerCase()];
+        transcriptionData.conversations = transcriptionData.conversations.filter((conversation: any) => {
+          return transcripts.some((transcript: any) => transcript === conversation.sid);
+        });
+        localStorage.removeItem("OperatorResults#SentimentMap");
+      }
       setConversations(transcriptionData.conversations);
       setTotalPages(transcriptionData.meta?.page_count || 1); // Assuming the API returns this information
     } catch (error) {
